@@ -1,0 +1,221 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================
+// LOOKUP TABLES
+// =========================
+
+// Loại hồ sơ: mục đích chuyến đi
+model LoaiHoSo {
+  maLoaiHoSo    Int              @id @default(autoincrement()) @map("ma_loai_ho_so")
+  tenLoaiHoSo   String           @unique @map("ten_loai_ho_so") @db.VarChar(100)
+  moTa          String?          @map("mo_ta") @db.VarChar(500)
+  hoSo          HoSoDiNuocNgoai[]
+
+  @@map("loai_ho_so")
+}
+
+// Trạng thái hồ sơ
+model TrangThaiHoSo {
+  maTrangThai    Int                    @id @default(autoincrement()) @map("ma_trang_thai")
+  tenTrangThai   String                 @unique @map("ten_trang_thai") @db.VarChar(100)
+  moTa           String?                @map("mo_ta") @db.VarChar(500)
+  hoSo           HoSoDiNuocNgoai[]
+  lichSu         LichSuTrangThaiHoSo[]
+
+  @@map("trang_thai_ho_so")
+}
+
+// Bước xử lý type
+model BuocXuLyType {
+  maBuoc       Int              @id @default(autoincrement()) @map("ma_buoc")
+  maBuocKey    String           @unique @map("ma_buoc_key") @db.VarChar(50)
+  tenBuoc      String           @map("ten_buoc") @db.VarChar(100)
+  tienTrinh    TienTrinhXuLy[]
+
+  @@map("buoc_xu_ly_type")
+}
+
+// =========================
+// HỆ THỐNG NHÂN SỰ
+// =========================
+
+model NguoiDung {
+  maNguoiDung        Int                    @id @default(autoincrement()) @map("ma_nguoi_dung")
+  tenDangNhap        String                 @unique @map("ten_dang_nhap") @db.VarChar(50)
+  matKhauHash        String                 @map("mat_khau_hash")
+  hoTen              String                 @map("ho_ten") @db.VarChar(120)
+  email              String                 @unique @db.VarChar(150)
+  phaiDoiMatKhau     Boolean                @default(true) @map("phai_doi_mat_khau")
+  maTrangThai        Int?                   @map("ma_trang_thai")
+  thoiDiemTao        DateTime               @default(now()) @map("thoi_diem_tao")
+  thoiDiemCapNhat    DateTime               @updatedAt @map("thoi_diem_cap_nhat")
+  
+  vienChuc           VienChuc?
+  hoSoTao            HoSoDiNuocNgoai[]      @relation("HoSoNguoiTao")
+  hoSoCapNhat        HoSoDiNuocNgoai[]      @relation("HoSoNguoiCapNhat")
+  fileUpload         GiayToDinhKem[]
+  tienTrinh          TienTrinhXuLy[]
+  lichSu             LichSuTrangThaiHoSo[]
+  yKien              YKienXuLy[]
+
+  @@map("nguoi_dung")
+}
+
+model DonVi {
+  maDonVi            Int                    @id @default(autoincrement()) @map("ma_don_vi")
+  tenDonVi           String                 @map("ten_don_vi") @db.VarChar(150)
+  maLoaiDonVi        Int?                   @map("ma_loai_don_vi")
+  maDonViCha         Int?                   @map("ma_don_vi_cha")
+  maTruongDonVi      Int?                   @map("ma_truong_don_vi")
+  thoiDiemTao        DateTime               @default(now()) @map("thoi_diem_tao")
+  thoiDiemCapNhat    DateTime               @updatedAt @map("thoi_diem_cap_nhat")
+  
+  vienChuc           VienChuc[]
+  baoCao             BaoCaoSauChuyenDi[]
+
+  @@map("don_vi")
+}
+
+model VienChuc {
+  maVienChuc         Int                    @id @default(autoincrement()) @map("ma_vien_chuc")
+  maNguoiDung        Int                    @unique @map("ma_nguoi_dung")
+  maDonVi            Int                    @map("ma_don_vi")
+  maChucVu           Int?                   @map("ma_chuc_vu")
+  laDangVien         Boolean                @default(false) @map("la_dang_vien")
+  ngayVaoDang        DateTime?              @map("ngay_vao_dang") @db.Date
+  ngaySinh           DateTime?              @map("ngay_sinh") @db.Date
+  
+  nguoiDung          NguoiDung              @relation(fields: [maNguoiDung], references: [maNguoiDung])
+  donVi              DonVi                  @relation(fields: [maDonVi], references: [maDonVi])
+  hoSo               HoSoDiNuocNgoai[]
+
+  @@map("vien_chuc")
+}
+
+// =========================
+// BẢNG HỒ SƠ
+// =========================
+
+model HoSoDiNuocNgoai {
+  maHoSo             Int                    @id @default(autoincrement()) @map("ma_ho_so")
+  maVienChuc         Int                    @map("ma_vien_chuc")
+  maLoaiHoSo         Int                    @map("ma_loai_ho_so")
+  tieuDe             String?                @map("tieu_de") @db.VarChar(250)
+  mucDich            String?                @map("muc_dich") @db.VarChar(1000)
+  quocGia            String?                @map("quoc_gia") @db.VarChar(120)
+  thoiGianBatDau     DateTime?              @map("thoi_gian_bat_dau") @db.Date
+  thoiGianKetThuc    DateTime?              @map("thoi_gian_ket_thuc") @db.Date
+  maTrangThaiHienTai Int                    @default(1) @map("ma_trang_thai_hien_tai")
+  nguoiTao           Int?                   @map("nguoi_tao")
+  nguoiCapNhat       Int?                   @map("nguoi_cap_nhat")
+  thoiDiemTao        DateTime               @default(now()) @map("thoi_diem_tao")
+  thoiDiemCapNhat    DateTime               @updatedAt @map("thoi_diem_cap_nhat")
+  
+  vienChuc           VienChuc               @relation(fields: [maVienChuc], references: [maVienChuc])
+  loaiHoSo           LoaiHoSo               @relation(fields: [maLoaiHoSo], references: [maLoaiHoSo])
+  trangThai          TrangThaiHoSo          @relation(fields: [maTrangThaiHienTai], references: [maTrangThai])
+  nguoiDungTao       NguoiDung?             @relation("HoSoNguoiTao", fields: [nguoiTao], references: [maNguoiDung])
+  nguoiDungCapNhat   NguoiDung?             @relation("HoSoNguoiCapNhat", fields: [nguoiCapNhat], references: [maNguoiDung])
+  
+  giayTo             GiayToDinhKem[]
+  tienTrinh          TienTrinhXuLy[]
+  lichSu             LichSuTrangThaiHoSo[]
+  yKien              YKienXuLy[]
+  baoCao             BaoCaoSauChuyenDi[]
+
+  @@index([maVienChuc])
+  @@index([maTrangThaiHienTai])
+  @@map("ho_so_di_nuoc_ngoai")
+}
+
+model GiayToDinhKem {
+  maFile             Int                    @id @default(autoincrement()) @map("ma_file")
+  maHoSo             Int                    @map("ma_ho_so")
+  tenFile            String                 @map("ten_file") @db.VarChar(255)
+  duongDan           String                 @map("duong_dan") @db.VarChar(500)
+  loaiFile           String?                @map("loai_file") @db.VarChar(100)
+  ngayTaiLen         DateTime               @default(now()) @map("ngay_tai_len")
+  nguoiTai           Int?                   @map("nguoi_tai")
+  
+  hoSo               HoSoDiNuocNgoai        @relation(fields: [maHoSo], references: [maHoSo])
+  nguoiDung          NguoiDung?             @relation(fields: [nguoiTai], references: [maNguoiDung])
+
+  @@index([maHoSo])
+  @@map("giay_to_dinh_kem")
+}
+
+model TienTrinhXuLy {
+  maTienTrinh        Int                    @id @default(autoincrement()) @map("ma_tien_trinh")
+  maHoSo             Int                    @map("ma_ho_so")
+  maBuocXuLy         Int                    @map("ma_buoc_xu_ly")
+  maNguoiXuLy        Int?                   @map("ma_nguoi_xu_ly")
+  hanhDong           String?                @map("hanh_dong") @db.VarChar(100)
+  noiDung            String?                @map("noi_dung")
+  thoiDiem           DateTime               @default(now()) @map("thoi_diem")
+  
+  hoSo               HoSoDiNuocNgoai        @relation(fields: [maHoSo], references: [maHoSo])
+  buoc               BuocXuLyType           @relation(fields: [maBuocXuLy], references: [maBuoc])
+  nguoiXuLy          NguoiDung?             @relation(fields: [maNguoiXuLy], references: [maNguoiDung])
+
+  @@index([maHoSo])
+  @@index([thoiDiem])
+  @@map("tien_trinh_xu_ly")
+}
+
+model LichSuTrangThaiHoSo {
+  maLichSu           Int                    @id @default(autoincrement()) @map("ma_lich_su")
+  maHoSo             Int                    @map("ma_ho_so")
+  maTrangThai        Int                    @map("ma_trang_thai")
+  nguoiThucHien      Int?                   @map("nguoi_thuc_hien")
+  thoiDiem           DateTime               @default(now()) @map("thoi_diem")
+  ghiChu             String?                @map("ghi_chu")
+  
+  hoSo               HoSoDiNuocNgoai        @relation(fields: [maHoSo], references: [maHoSo])
+  trangThai          TrangThaiHoSo          @relation(fields: [maTrangThai], references: [maTrangThai])
+  nguoiDung          NguoiDung?             @relation(fields: [nguoiThucHien], references: [maNguoiDung])
+
+  @@index([maHoSo])
+  @@map("lich_su_trang_thai_ho_so")
+}
+
+model YKienXuLy {
+  maYKien            Int                    @id @default(autoincrement()) @map("ma_y_kien")
+  maHoSo             Int                    @map("ma_ho_so")
+  maNguoiGui         Int                    @map("ma_nguoi_gui")
+  vaiTroGui          String                 @map("vai_tro_gui") @db.VarChar(50)
+  noiDung            String                 @map("noi_dung")
+  thoiDiem           DateTime               @default(now()) @map("thoi_diem")
+  
+  hoSo               HoSoDiNuocNgoai        @relation(fields: [maHoSo], references: [maHoSo])
+  nguoiGui           NguoiDung              @relation(fields: [maNguoiGui], references: [maNguoiDung])
+
+  @@index([maHoSo])
+  @@index([thoiDiem])
+  @@map("y_kien_xu_ly")
+}
+
+model BaoCaoSauChuyenDi {
+  maBaoCao           Int                    @id @default(autoincrement()) @map("ma_bao_cao")
+  maHoSo             Int                    @map("ma_ho_so")
+  noiDungBaoCao      String?                @map("noi_dung_bao_cao")
+  fileDinhKem        String?                @map("file_dinh_kem") @db.VarChar(500)
+  ngayNop            DateTime               @default(now()) @map("ngay_nop")
+  maDonViXacNhan     Int?                   @map("ma_don_vi_xac_nhan")
+  ngayXacNhan        DateTime?              @map("ngay_xac_nhan")
+  
+  hoSo               HoSoDiNuocNgoai        @relation(fields: [maHoSo], references: [maHoSo])
+  donVi              DonVi?                 @relation(fields: [maDonViXacNhan], references: [maDonVi])
+
+  @@index([maHoSo])
+  @@map("bao_cao_sau_chuyen_di")
+}
