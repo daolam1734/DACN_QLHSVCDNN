@@ -18,16 +18,28 @@ npm install
 
 ## Cấu hình Database
 
-1. Tạo database PostgreSQL với tên `da_qlhsvc`
+1. Tạo database PostgreSQL với tên `QuanLyHoSoVienChuc_TVU`
 2. Cập nhật file `.env` với thông tin kết nối của bạn
-3. Chạy migration:
+3. Chạy migration theo thứ tự:
 
 ```bash
-npx prisma migrate dev --name init
+# Phase 1: Lookup tables (Chức vụ, Loại đơn vị, Quốc gia, Nguồn kinh phí, Hình thức đi)
+psql -U postgres -d QuanLyHoSoVienChuc_TVU -f prisma/migration-phase1-lookup-tables.sql
+
+# Phase 2: Enhance data (Cập nhật bảng, Người đi cùng, Quy trình duyệt, Deadline)
+psql -U postgres -d QuanLyHoSoVienChuc_TVU -f prisma/migration-phase2-enhance-data.sql
+
+# Phase 3: Features (Thông báo, Template văn bản, Cấu hình hệ thống)
+psql -U postgres -d QuanLyHoSoVienChuc_TVU -f prisma/migration-phase3-features.sql
+
+# Sau khi chạy migration, cập nhật Prisma schema
+npx prisma db pull
 npx prisma generate
 ```
 
-Xem chi tiết trong [PRISMA_SETUP.md](./PRISMA_SETUP.md)
+Xem chi tiết phân tích và thiết kế trong:
+- [PHAN_TICH_VA_GIAI_PHAP.md](./prisma/PHAN_TICH_VA_GIAI_PHAP.md) - Phân tích chi tiết và giải pháp SQL
+- [PRISMA_SETUP.md](./PRISMA_SETUP.md) - Hướng dẫn setup Prisma
 
 ## Chạy development server
 

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Test</title>
+</head>
+<body>
+    <h1>Dashboard API Test</h1>
+    <div id="status">Loading...</div>
+    <pre id="output"></pre>
+
+    <script>
+        const output = document.getElementById('output');
+        const status = document.getElementById('status');
+
+        async function test() {
+            try {
+                // 1. Login
+                status.textContent = 'Step 1: Logging in...';
+                const loginRes = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@tvu.edu.vn',
+                        mat_khau: 'Admin@123'
+                    })
+                });
+                
+                const loginData = await loginRes.json();
+                output.textContent += '\\n[LOGIN RESPONSE]\\n' + JSON.stringify(loginData, null, 2);
+                
+                if (!loginData.success || !loginData.token) {
+                    throw new Error('Login failed: ' + loginData.message);
+                }
+
+                const token = loginData.token;
+                localStorage.setItem('access_token', token);
+                
+                // 2. Test Summary API
+                status.textContent = 'Step 2: Fetching summary...';
+                const summaryRes = await fetch('/api/dashboard/admin/summary', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const summaryData = await summaryRes.json();
+                output.textContent += '\\n\\n[SUMMARY RESPONSE]\\n' + JSON.stringify(summaryData, null, 2);
+                
+                // 3. Test Recent API
+                status.textContent = 'Step 3: Fetching recent profiles...';
+                const recentRes = await fetch('/api/dashboard/admin/recent?limit=5', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const recentData = await recentRes.json();
+                output.textContent += '\\n\\n[RECENT RESPONSE]\\n' + JSON.stringify(recentData, null, 2);
+                
+                status.textContent = '✅ All tests passed!';
+                status.style.color = 'green';
+                
+            } catch (error) {
+                status.textContent = '❌ Test failed: ' + error.message;
+                status.style.color = 'red';
+                output.textContent += '\\n\\n[ERROR]\\n' + error.stack;
+            }
+        }
+
+        test();
+    </script>
+</body>
+</html>
